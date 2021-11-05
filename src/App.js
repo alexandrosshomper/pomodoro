@@ -96,7 +96,7 @@ function App() {
   };
 
   const handleSessionIncrease = () => {
-    const oldSessionLength = sessionlength;
+    let oldSessionLength = sessionlength;
     if (!isPlaying && sessionlength < 60) {
       setSessionlength((oldSessionLength) => oldSessionLength + 1);
       if (currentTimer === "Session") {
