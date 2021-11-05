@@ -28,7 +28,7 @@ function App() {
     if (!isPlaying) {
       clearInterval(loop);
       setPlayPauseIcon(mdiPlayCircle);
-      console.log("isNotPlaying");
+      console.log("Clock not running");
     } else if (isPlaying) {
       interval = setInterval(() => {
         if (clockCount === 0) {
@@ -43,12 +43,13 @@ function App() {
       }, 1000);
       setLoop(interval);
       setPlayPauseIcon(mdiPauseCircle);
-      console.log("isPlaying");
+      console.log("Clock running");
     }
     return () => clearInterval(interval);
   }, [isPlaying, clockCount, breaklength, sessionlength]);
 
   const convertToTime = (count) => {
+    console.log("Count is: " + count);
     let minutes = Math.floor(count / 60);
     minutes = minutes < 10 ? "0" + minutes : minutes;
     let seconds = count % 60;
@@ -95,10 +96,11 @@ function App() {
   };
 
   const handleSessionIncrease = () => {
+    const oldSessionLength = sessionlength;
     if (!isPlaying && sessionlength < 60) {
-      setSessionlength(sessionlength + 1);
+      setSessionlength((oldSessionLength) => oldSessionLength + 1);
       if (currentTimer === "Session") {
-        setClockCount((sessionlength + 1) * 60);
+        setClockCount((oldSessionLength) => (oldSessionLength + 1) * 60);
       }
     }
   };
