@@ -15,9 +15,9 @@ import Icon from "@mdi/react";
 import { React, useState, useEffect } from "react";
 
 function App() {
-  const [breaklength, setBreaklength] = useState(5);
-  const [sessionlength, setSessionlength] = useState(25);
-  const [clockCount, setClockCount] = useState(25 * 60);
+  const [breaklength, setBreaklength] = useState(300);
+  const [sessionlength, setSessionlength] = useState(1500);
+  const [clockCount, setClockCount] = useState(1500);
   const [currentTimer, setCurrentTimer] = useState("Session");
   const [isPlaying, setIsPlaying] = useState(false);
   const [playPauseIcon, setPlayPauseIcon] = useState(mdiPlayCircle);
@@ -34,7 +34,7 @@ function App() {
         if (clockCount === 0) {
           setCurrentTimer(currentTimer === "Session" ? "Break" : "Session");
           setClockCount(
-            currentTimer === "Session" ? breaklength * 60 : sessionlength * 60
+            currentTimer === "Session" ? breaklength : sessionlength
           );
           document.getElementById("beep").play();
         } else {
@@ -49,22 +49,22 @@ function App() {
   }, [isPlaying, clockCount, breaklength, sessionlength]);
 
   const convertToTime = (count) => {
-    console.log("Count is: " + count);
     let minutes = Math.floor(count / 60);
-    minutes = minutes < 10 ? "0" + minutes : minutes;
     let seconds = count % 60;
-    seconds = seconds < 10 ? "0" + seconds : seconds;
-    const time = minutes + ":" + seconds;
-    return time;
+    return (
+      (minutes < 10 ? "0" + minutes : minutes) +
+      ":" +
+      (seconds < 10 ? "0" + seconds : seconds)
+    );
   };
 
   const handlePlayPause = () => {
     setIsPlaying(!isPlaying);
   };
   const handleReset = () => {
-    setBreaklength(5);
-    setSessionlength(25);
-    setClockCount(25 * 60);
+    setBreaklength(300);
+    setSessionlength(1500);
+    setClockCount(1500);
     setCurrentTimer("Session");
     setIsPlaying(false);
     clearInterval(loop);
@@ -72,51 +72,31 @@ function App() {
     document.getElementById("beep").currentTime = 0;
   };
 
-  const handleBreakIncrease = () => {
-    if (!isPlaying && breaklength < 60) {
-      setBreaklength(breaklength + 1);
-      if (currentTimer === "Break") {
-        setClockCount((breaklength + 1) * 60);
-      }
-    }
-  };
-  const handleBreakDecrease = () => {
-    if (!isPlaying && breaklength > 1) {
-      setBreaklength(breaklength - 1);
-      if (currentTimer === "Break") {
-        setClockCount((breaklength - 1) * 60);
-      }
-    }
-  };
   const breakProps = {
     title: "Break",
     count: breaklength,
-    handleDecrease: handleBreakDecrease,
-    handleIncrease: handleBreakIncrease,
   };
 
-  const handleSessionIncrease = () => {
-    let oldSessionLength = sessionlength;
-    if (!isPlaying && sessionlength < 60) {
-      setSessionlength((oldSessionLength) => oldSessionLength + 1);
-      if (currentTimer === "Session") {
-        setClockCount((oldSessionLength) => (oldSessionLength + 1) * 60);
-      }
-    }
-  };
-  const handleSessionDecrease = () => {
-    if (!isPlaying && sessionlength > 1) {
-      setSessionlength(sessionlength - 1);
-      if (currentTimer === "Session") {
-        setClockCount((sessionlength - 1) * 60);
-      }
-    }
-  };
   const sessionProps = {
     title: "Session",
     count: sessionlength,
-    handleDecrease: handleSessionDecrease,
-    handleIncrease: handleSessionIncrease,
+  };
+
+  const handleTimerAdjust = (amount, type) => {
+    if (type === "Break") {
+      if (breaklength <= 60 && amount < 0) {
+        return;
+      }
+      setBreaklength((prev) => prev + amount);
+    } else {
+      if (sessionlength <= 60 && amount < 0) {
+        return;
+      }
+      setSessionlength((prev) => prev + amount);
+      if (!isPlaying) {
+        setClockCount((prev) => prev + amount);
+      }
+    }
   };
 
   const SetTimer = (props) => {
@@ -125,7 +105,10 @@ function App() {
       <div className="timer-container">
         <h2 id={id + "-label"}>{props.title} Length</h2>
         <div className="flex controls">
-          <button id={id + "-decrement"} onClick={props.handleDecrease}>
+          <button
+            id={id + "-decrement"}
+            onClick={() => handleTimerAdjust(-60, props.title)}
+          >
             <Icon
               path={mdiMinusCircleOutline}
               title="Decrease"
@@ -133,8 +116,11 @@ function App() {
               color="black"
             />
           </button>
-          <span id={id + "-length"}>{props.count}</span>
-          <button id={id + "-increment"} onClick={props.handleIncrease}>
+          <span id={id + "-length"}>{props.count / 60}</span>
+          <button
+            id={id + "-increment"}
+            onClick={() => handleTimerAdjust(60, props.title)}
+          >
             <Icon
               path={mdiPlusCircleOutline}
               title="Increase"
