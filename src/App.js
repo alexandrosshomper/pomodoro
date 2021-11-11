@@ -1,162 +1,151 @@
 import "./App.css";
 import {
   mdiPlusCircleOutline,
-  mdiPlusCircle,
-  mdiMinusCircle,
   mdiMinusCircleOutline,
   mdiPlayCircle,
-  mdiPlayCircleOutline,
   mdiPauseCircle,
-  mdiPauseCircleOutline,
   mdiSkipPreviousCircle,
-  mdiSkipPreviousCircleOutline,
 } from "@mdi/js";
 import Icon from "@mdi/react";
-import { React, useState, useEffect } from "react";
+import { React, useState, useEffect, useRef } from "react";
+const audioSrc =
+  "https://raw.githubusercontent.com/freeCodeCamp/cdn/master/build/testable-projects-fcc/audio/BeepSound.wav";
 
 function App() {
-  const [breaklength, setBreaklength] = useState(300);
-  const [sessionlength, setSessionlength] = useState(1500);
-  const [clockCount, setClockCount] = useState(1500);
-  const [currentTimer, setCurrentTimer] = useState("Session");
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playPauseIcon, setPlayPauseIcon] = useState(mdiPlayCircle);
-  const [loop, setLoop] = useState();
+  //Initials
+  const initBreakLength = 5 * 60;
+  const initSessionLength = 25 * 60;
+  const initDisplay = 25 * 60;
+  const initTimerOn = false;
+  const initOnBreak = false;
+  //States
+  const [breakLength, setBreakLength] = useState(initBreakLength);
+  const [sessionLength, setSessionLength] = useState(initSessionLength);
+  const [display, setDisplay] = useState(initDisplay);
+  const [timerOn, setTimerOn] = useState(initTimerOn);
+  const [onBreak, setOnBreak] = useState(initOnBreak);
+
+  let player = useRef(null);
 
   useEffect(() => {
-    let interval = null;
-    if (!isPlaying) {
-      clearInterval(loop);
-      setPlayPauseIcon(mdiPlayCircle);
-      console.log("Clock not running");
-    } else if (isPlaying) {
-      interval = setInterval(() => {
-        if (clockCount === 0) {
-          setCurrentTimer(currentTimer === "Session" ? "Break" : "Session");
-          setClockCount(
-            currentTimer === "Session" ? breaklength : sessionlength
-          );
-          document.getElementById("beep").play();
-        } else {
-          setClockCount(clockCount - 1);
-        }
-      }, 1000);
-      setLoop(interval);
-      setPlayPauseIcon(mdiPauseCircle);
-      console.log("Clock running");
+    if (display <= 0) {
+      setOnBreak(true);
+      breakSound();
+    } else if (!timerOn && display === breakLength) {
+      setOnBreak(false);
     }
-    return () => clearInterval(interval);
-  }, [isPlaying, clockCount, breaklength, sessionlength]);
+  }, [display, onBreak, timerOn, breakLength, sessionLength]);
 
-  const convertToTime = (count) => {
-    let minutes = Math.floor(count / 60);
-    let seconds = count % 60;
+  const breakSound = () => {
+    player.currentTime = 0;
+    player.play();
+  };
+
+  const formatDisplayTime = (time) => {
+    let mins = Math.floor(time / 60);
+    let secs = time % 60;
     return (
-      (minutes < 10 ? "0" + minutes : minutes) +
-      ":" +
-      (seconds < 10 ? "0" + seconds : seconds)
+      (mins < 10 ? "0" + mins : mins) + ":" + (secs < 10 ? "0" + secs : secs)
     );
   };
 
-  const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
-  };
-  const handleReset = () => {
-    setBreaklength(300);
-    setSessionlength(1500);
-    setClockCount(1500);
-    setCurrentTimer("Session");
-    setIsPlaying(false);
-    clearInterval(loop);
-    document.getElementById("beep").pause();
-    document.getElementById("beep").currentTime = 0;
+  const formatTime = (time) => {
+    return time / 60;
   };
 
-  const breakProps = {
-    title: "Break",
-    count: breaklength,
-  };
-
-  const sessionProps = {
-    title: "Session",
-    count: sessionlength,
-  };
-
-  const handleTimerAdjust = (amount, type) => {
+  const updateTime = (amount, type) => {
     if (type === "Break") {
-      if (breaklength <= 60 && amount < 0) {
+      if ((breakLength <= 60 && amount < 0) || breakLength >= 60 * 60) {
         return;
       }
-      setBreaklength((prev) => prev + amount);
+      setBreakLength((prev) => prev + amount);
     } else {
-      if (sessionlength <= 60 && amount < 0) {
+      if ((sessionLength <= 60 && amount < 0) || sessionLength >= 60 * 60) {
         return;
       }
-      setSessionlength((prev) => prev + amount);
-      if (!isPlaying) {
-        setClockCount((prev) => prev + amount);
+      setSessionLength((prev) => prev + amount);
+      if (!timerOn) {
+        setDisplay(sessionLength + amount);
       }
     }
   };
 
-  const SetTimer = (props) => {
-    const id = props.title.toLowerCase();
-    return (
-      <div className="timer-container">
-        <h2 id={id + "-label"}>{props.title} Length</h2>
-        <div className="flex controls">
-          <button
-            id={id + "-decrement"}
-            onClick={() => handleTimerAdjust(-60, props.title)}
-          >
-            <Icon
-              path={mdiMinusCircleOutline}
-              title="Decrease"
-              size={1}
-              color="black"
-            />
-          </button>
-          <span id={id + "-length"}>{props.count / 60}</span>
-          <button
-            id={id + "-increment"}
-            onClick={() => handleTimerAdjust(60, props.title)}
-          >
-            <Icon
-              path={mdiPlusCircleOutline}
-              title="Increase"
-              size={1}
-              color="black"
-            />
-          </button>
-        </div>
-      </div>
-    );
+  const timeControl = () => {
+    let second = 1000;
+    let date = new Date().getTime();
+    let nextDate = new Date().getTime() + second;
+    let onBreakVariable = onBreak;
+
+    if (!timerOn) {
+      let interval = setInterval(() => {
+        date = new Date().getTime();
+        if (date > nextDate) {
+          setDisplay((prev) => {
+            if (prev <= 0 && !onBreakVariable) {
+              // breakSound();
+              onBreakVariable = true;
+              return breakLength;
+            } else if (prev <= 0 && onBreakVariable) {
+              // breakSound();
+              onBreakVariable = false;
+              setOnBreak(false);
+              return sessionLength;
+            }
+            return prev - 1;
+          });
+          nextDate += second;
+        }
+      }, 30);
+      localStorage.clear();
+      localStorage.setItem("interval-id", interval);
+    }
+    if (timerOn) {
+      clearInterval(localStorage.getItem("interval-id"));
+    }
+    setTimerOn(!timerOn);
+  };
+
+  const resetTime = () => {
+    clearInterval(localStorage.getItem("interval-id"));
+    setDisplay(25 * 60);
+    setBreakLength(5 * 60);
+    setSessionLength(25 * 60);
+    player.pause();
+    player.currentTime = 0;
+    setTimerOn(false);
+    setOnBreak(false);
   };
 
   return (
     <div className="App">
+      <h1>freePomodoro</h1>
       <div className="flex">
-        <SetTimer {...breakProps} />
-        <SetTimer {...sessionProps} />
+        <Length
+          updateTime={updateTime}
+          type={"Break"}
+          time={breakLength}
+          formatTime={formatTime}
+        />
+        <Length
+          updateTime={updateTime}
+          type={"Session"}
+          time={sessionLength}
+          formatTime={formatTime}
+        />
       </div>
       <div className="clock-container">
-        <audio
-          id="beep"
-          preload="auto"
-          src="http://www.peter-weinberg.com/files/1014/8073/6015/BeepSound.wav"
-        />
-        <h1 id="timer-label">{currentTimer}</h1>
-        <span id="time-left">{convertToTime(clockCount)}</span>
+        <h1 id="timer-label">{onBreak ? "Break" : "Session"}</h1>
+        <span id="time-left">{formatDisplayTime(display)}</span>
         <div className="flex">
-          <button id="start_stop" onClick={handlePlayPause}>
+          <button id="start_stop" onClick={timeControl}>
             <Icon
-              path={playPauseIcon}
+              path={timerOn ? mdiPauseCircle : mdiPlayCircle}
               title="Play Pause"
               size={1}
               color="black"
             />
           </button>
-          <button id="reset" onClick={handleReset}>
+          <button id="reset" onClick={resetTime}>
             <Icon
               path={mdiSkipPreviousCircle}
               title="Play"
@@ -165,6 +154,35 @@ function App() {
             />
           </button>
         </div>
+      </div>
+      <audio ref={(t) => (player = t)} src={audioSrc} id="beep" />
+    </div>
+  );
+}
+
+function Length({ updateTime, type, time, formatTime }) {
+  const id = type.toLowerCase();
+  return (
+    <div className="timer-container">
+      <h2 id={id + "-label"}>{type} Length</h2>
+      <div className="flex controls">
+        <button id={id + "-decrement"} onClick={() => updateTime(-60, type)}>
+          <Icon
+            path={mdiMinusCircleOutline}
+            title="Decrease"
+            size={1}
+            color="black"
+          />
+        </button>
+        <span id={id + "-length"}>{formatTime(time)}</span>
+        <button id={id + "-increment"} onClick={() => updateTime(60, type)}>
+          <Icon
+            path={mdiPlusCircleOutline}
+            title="Decrease"
+            size={1}
+            color="black"
+          />
+        </button>
       </div>
     </div>
   );

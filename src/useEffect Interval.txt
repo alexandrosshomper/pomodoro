@@ -1,0 +1,24 @@
+useEffect(() => {
+    let interval = null;
+    if (!isPlaying) {
+      clearInterval(loop);
+      setPlayPauseIcon(mdiPlayCircle);
+      console.log("Clock not running");
+    } else if (isPlaying) {
+      interval = setInterval(() => {
+        if (clockCount === 0) {
+          setCurrentTimer(currentTimer === "Session" ? "Break" : "Session");
+          setClockCount(
+            currentTimer === "Session" ? breaklength : sessionlength
+          );
+          document.getElementById("beep").play();
+        } else {
+          setClockCount(clockCount - 1);
+        }
+      }, 1000);
+      setLoop(interval);
+      setPlayPauseIcon(mdiPauseCircle);
+      console.log("Clock running");
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying, clockCount, breaklength, sessionlength]);
